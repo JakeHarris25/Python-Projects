@@ -4,13 +4,13 @@ import time
 # OpenWeatherAPI
 api_key = "1dd5aa3837d3ec1a46e9a72a65841d15"
 
-# user input
-msg1 = print("Please enter the latitude and longtitude of the location you want the weather information of: (Use three decimals)\n")
-lat = input("Latitude: ")
-lon = input("Longitude: ")
-print("")
-time.sleep(1)
-
+def location(city_name):
+    location_request = requests.get(f"http://api.openweathermap.org/geo/1.0/direct?q={city_name}&limit={1}&appid={api_key}")
+    loc_data = location_request.json()
+    if loc_data:
+        return loc_data[0]
+    else:
+        print("City not found.")
 
 
 
@@ -42,44 +42,17 @@ def display_weather(data):
     print(f"Description: {weather_desc}")
 
 
+
+# user input
+city_name = input("Please enter the city you'd like weather data for: ")
+
+location_data = location(city_name)
+if location_data:
+    lat = location_data['lat']
+    lon = location_data['lon']
+
+
 weather_data = get_weather_data(lat, lon)
 display_weather(weather_data)
 
     
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -1,5 +1,4 @@
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLineEdit, QPushButton, QLabel, QWidget, QVBoxLayout
-from WeatherDataOfFlorida import *
 import sys
 import requests
 import time
@@ -65,7 +64,7 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         # GUI window title
-        self.setWindowTitle("Live Florida Weather")
+        self.setWindowTitle("Live Weather")
         self.setGeometry(100,100,600,400)
 
         # Create main layout and widget

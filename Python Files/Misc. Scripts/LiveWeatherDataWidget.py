@@ -4,7 +4,7 @@ import requests
 import time
 
 # OpenWeatherAPI
-api_key = "1dd5aa3837d3ec1a46e9a72a65841d15"
+api_key = ""
 
 # function to grab city name's lat and long coordinates
 def location(city_name):

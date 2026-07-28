@@ -1,8 +1,3 @@
-# first, get the computer/host name
-# retrieve the current date and time
-# check enabled Windows firewall profiles (domain, private, public)
-# display results in a readable audit report (PDF will work)
-
 import socket
 from datetime import datetime
 import subprocess

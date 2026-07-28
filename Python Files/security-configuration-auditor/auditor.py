@@ -116,7 +116,7 @@ def main():
         print(
             f"{port['LocalAddress']:<18}"
             f"{port['LocalPort']:<8}"
-            f"{port['ProcessName']:<26}"
+            f"{port['ProcessName'][:24]:<26}"
             f"{port['OwningProcess']:<10}"
             f"{exposure:<20}"
             f"{approval_status:<12}"

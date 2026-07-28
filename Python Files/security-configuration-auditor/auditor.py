@@ -18,14 +18,30 @@ def get_audit_time():
     return current_time.strftime("%B %d, %Y at %I:%M %p")
 
 def get_firewall_profiles():
-    command = ("Get-NetFirewallProfile | "
-               "Select-Object Name, Enabled | "
-               "ConvertTo-Json")
-    
-    result = subprocess.run(["powershell.exe", "-NoProfile", "-Command", command], capture_output=True, text=True, check= True)
-    firewall_profiles = json.loads(result.stdout)
+    try:
+        command = ("Get-NetFirewallProfile | "
+                "Select-Object Name, Enabled | "
+                "ConvertTo-Json")
+        
+        result = subprocess.run(["powershell.exe", "-NoProfile", "-Command", command], capture_output=True, text=True, check=True)
+        firewall_profiles = json.loads(result.stdout)
 
-    return firewall_profiles
+        json_is_dict = isinstance(firewall_profiles, dict)
+        if json_is_dict:
+            json_list = []
+            json_list.append(firewall_profiles)
+            return json_list
+        else:
+            return firewall_profiles
+    
+    except subprocess.CalledProcessError as error:
+        print("Failed to retrieve firewall profiles.\n")
+        print(f"Powershell error: {error.stderr}")
+        return None
+    except json.JSONDecodeError as error:
+        print("Failed to convert data to Json.")
+        print(f"Powershell error: {error}")
+        return None
 
 def get_firewall_status_check(firewall_profiles):
     all_profiles_enabled = all(
@@ -37,19 +53,33 @@ def get_firewall_status_check(firewall_profiles):
     else:
         return "Firewall check: FAIL"
 
-
 def get_tcp_ports():
-    process_name = "@{ Name = 'ProcessName'; Expression = {(Get-Process -Id $_.OwningProcess).ProcessName }}"
-    command = ("Get-NetTCPConnection -State Listen | "
-                f"Select-Object LocalAddress, LocalPort, OwningProcess, {process_name} | "
-                "Sort-Object LocalPort | "
-                "ConvertTo-Json")
+    try:
+        process_name = "@{ Name = 'ProcessName'; Expression = {(Get-Process -Id $_.OwningProcess).ProcessName }}"
+        command = ("Get-NetTCPConnection -State Listen | "
+                    f"Select-Object LocalAddress, LocalPort, OwningProcess, {process_name} | "
+                    "Sort-Object LocalPort | "
+                    "ConvertTo-Json")
 
-    result = subprocess.run(["powershell.exe", "-NoProfile", "-Command", command], capture_output=True, text=True, check= True)
-    tcp_ports = json.loads(result.stdout)
+        result = subprocess.run(["powershell.exe", "-NoProfile", "-Command", command], capture_output=True, text=True, check=True)
+        tcp_ports = json.loads(result.stdout)
+        
+        json_is_dict = isinstance(tcp_ports, dict)
+        if json_is_dict:
+            json_list = []
+            json_list.append(tcp_ports)
+            return json_list
+        else:
+            return tcp_ports
 
-    return tcp_ports
-
+    except subprocess.CalledProcessError as error:
+        print("Failed to retrieve listener information.")
+        print(f"Powershell error: {error.stderr}")
+        return None
+    except json.JSONDecodeError as error:
+        print("Failed to convert data to Json.")
+        print(f"Powershell error: {error}")
+        return None
 
 def classify_net_address(local_address):
     
@@ -58,7 +88,7 @@ def classify_net_address(local_address):
     elif local_address == "0.0.0.0" or local_address == "::":
         return "All interfaces"
     else:
-        return "Bound interface"
+        return "Specific interface"
         
 def classify_listener(local_port, exposure):
     if local_port in approved_ports:
@@ -83,30 +113,46 @@ def main():
     hostname = get_hostname()
     audit_time = get_audit_time()
     firewall_profiles = get_firewall_profiles()
+    if firewall_profiles is None:
+        return
+
     firewall_status_check = get_firewall_status_check(firewall_profiles)
     tcp_ports = get_tcp_ports()
+    if tcp_ports is None:
+        return
+    
     approved_count = 0
     review_count = 0
     local_only_count = 0
     high_priority_count = 0
     total_listeners = len(tcp_ports)
 
-    # print("Security Configuration Audit")
-    # print(f"Computer hostname: {hostname}\n"
-    #       f"Current audit time: {audit_time}\n")
+    print("~" * 28)
+    print("SECURITY CONFIGURATION AUDIT")
+    print("~" * 28)
+    print(
+    f"{'HOSTNAME':<18}"
+    f"{'AUDIT TIME':<8}"
+    )
 
-    # for profile in firewall_profiles:
-    #     name = profile["Name"]
-    #     enabled = profile["Enabled"]
+    print(f"{hostname:<18}"
+          f"{audit_time:<8}\n")
 
-    #     if enabled:
-    #         status = "Enabled"
-    #     else:
-    #         status = "Disabled"
+    print("Firewall Profile Status")
+    print("-" * 23)
+    for profile in firewall_profiles:
+        name = profile["Name"]
+        enabled = profile["Enabled"]
 
-    #     print(f"{name}: {status}")
+        if enabled:
+            status = "Enabled"
+        else:
+            status = "Disabled"
 
-    # print(firewall_status_check)
+        print(f"{name}: {status}")
+
+    print("-" * 15)
+    print(firewall_status_check)
 
     print("\nListening TCP Ports:")
     print("-" * 105)
@@ -123,7 +169,8 @@ def main():
     for port in tcp_ports:
         exposure = classify_net_address(port["LocalAddress"])
         approval_status = classify_listener(port['LocalPort'], exposure)
-
+        process_name = port['ProcessName'] or "Unknown"
+       
         if approval_status == "Approved":
             approved_count += 1
         elif approval_status == "Local only":
@@ -136,7 +183,7 @@ def main():
         print(
             f"{port['LocalAddress']:<18}"
             f"{port['LocalPort']:<8}"
-            f"{port['ProcessName'][:24]:<26}"
+            f"{process_name[:24]:<26}"
             f"{port['OwningProcess']:<10}"
             f"{exposure:<20}"
             f"{approval_status:<12}"

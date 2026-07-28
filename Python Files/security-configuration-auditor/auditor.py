@@ -60,6 +60,19 @@ def classify_net_address(local_address):
     else:
         return "Bound interface"
         
+def classify_listener(local_port, exposure):
+    if local_port in approved_ports:
+        return "Approved"
+    elif exposure == "Local only":
+        return "Local only"
+    elif exposure == "All interfaces":
+        return "High-priority review"
+    else:
+        return "Review"
+
+def count_total_listeners():
+    return len(get_tcp_ports())
+
 
 
 def main():
@@ -70,25 +83,26 @@ def main():
     tcp_ports = get_tcp_ports()
     approved_count = 0
     review_count = 0
+    local_only_count = 0
+    high_priority_count = 0
+    total_listeners = count_total_listeners()
 
-    print("Security Configuration Audit")
-    print(f"Computer hostname: {hostname}\n"
-          f"Current audit time: {audit_time}\n")
+    # print("Security Configuration Audit")
+    # print(f"Computer hostname: {hostname}\n"
+    #       f"Current audit time: {audit_time}\n")
 
-    for profile in firewall_profiles:
-        name = profile["Name"]
-        enabled = profile["Enabled"]
+    # for profile in firewall_profiles:
+    #     name = profile["Name"]
+    #     enabled = profile["Enabled"]
 
-        if enabled:
-            status = "Enabled"
-        else:
-            status = "Disabled"
+    #     if enabled:
+    #         status = "Enabled"
+    #     else:
+    #         status = "Disabled"
 
-        print(f"{name}: {status}")
+    #     print(f"{name}: {status}")
 
-    print(firewall_status_check)
-
-    tcp_ports = get_tcp_ports()
+    # print(firewall_status_check)
 
     print("\nListening TCP Ports:")
     print("-" * 105)
@@ -102,15 +116,17 @@ def main():
     f"{'STATUS':<12}"
     )
 
-
     for port in tcp_ports:
         exposure = classify_net_address(port["LocalAddress"])
+        approval_status = classify_listener(port['LocalPort'], exposure)
 
-        if port["LocalPort"] in approved_ports:
-            approval_status = "Approved"
+        if approval_status == "Approved":
             approved_count += 1
+        elif approval_status == "Local only":
+            local_only_count += 1
+        elif approval_status == 'High-priority review':
+            high_priority_count += 1
         else:
-            approval_status = "Review"
             review_count += 1
 
         print(
@@ -122,13 +138,21 @@ def main():
             f"{approval_status:<12}"
         )
 
-
-
     print("-" * 105)
     print(f"Approved listeners: {approved_count}")
+    print(f"High-priority listeners to review: {high_priority_count}")
     print(f"Listeners to review: {review_count}")
+    print(f"Local only listeners: {local_only_count}")
+    print("-" * 25)
+    print(f"Total listener count: {total_listeners}")
+    
+    
 
    
+
+
+
+
 
 if __name__ == "__main__":
     main()

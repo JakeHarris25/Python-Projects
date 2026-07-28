@@ -1,10 +1,11 @@
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLineEdit, QPushButton, QLabel, QWidget, QVBoxLayout
+from WeatherDataOfFlorida import *
 import sys
 import requests
 import time
 
 # OpenWeatherAPI
-api_key = ""
+api_key = "1dd5aa3837d3ec1a46e9a72a65841d15"
 
 # function to grab city name's lat and long coordinates
 def location(city_name):
@@ -64,7 +65,7 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         # GUI window title
-        self.setWindowTitle("Live Weather")
+        self.setWindowTitle("Live Florida Weather")
         self.setGeometry(100,100,600,400)
 
         # Create main layout and widget

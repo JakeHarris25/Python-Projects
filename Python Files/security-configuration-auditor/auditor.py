@@ -70,10 +70,14 @@ def classify_listener(local_port, exposure):
     else:
         return "Review"
 
-def count_total_listeners():
-    return len(get_tcp_ports())
+def completeness_check(approved_count, review_count, local_only_count, high_priority_count, total_listeners):
 
+    sum_of_counts = approved_count + review_count + local_only_count + high_priority_count
 
+    if total_listeners == sum_of_counts:
+        return "PASS!"
+    else:
+        return "FAIL. Verify listener count."
 
 def main():
     hostname = get_hostname()
@@ -85,7 +89,7 @@ def main():
     review_count = 0
     local_only_count = 0
     high_priority_count = 0
-    total_listeners = count_total_listeners()
+    total_listeners = len(tcp_ports)
 
     # print("Security Configuration Audit")
     # print(f"Computer hostname: {hostname}\n"
@@ -145,6 +149,16 @@ def main():
     print(f"Local only listeners: {local_only_count}")
     print("-" * 25)
     print(f"Total listener count: {total_listeners}")
+
+    result = completeness_check(
+    approved_count,
+    review_count,
+    local_only_count,
+    high_priority_count,
+    total_listeners
+    )
+
+    print("Completeness verification:", result)
     
     
 

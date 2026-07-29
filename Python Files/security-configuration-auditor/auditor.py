@@ -143,6 +143,38 @@ def get_service_name():
         print(f"Powershell error: {error}")
         return None
 
+def get_process_map():
+    try:
+        command = ("Get-CimInstance -ClassName Win32_Process | "
+                   "Select-Object ProcessId, Name, ExecutablePath | "
+                   "ConvertTo-Json")
+
+        result = subprocess.run(["powershell.exe", "-NoProfile", "-Command", command], capture_output=True, text=True, check=True)
+        exe_result = json.loads(result.stdout)
+
+        json_is_dict = isinstance(exe_result, dict)
+        if json_is_dict:
+            json_list = []
+            json_list.append(exe_result)
+            exe_result = json_list
+        
+        exe_pid_dict = {}
+
+        for var in exe_result:
+            pid = var["ProcessId"]
+            pid_int = int(pid)
+            exe_path = var["ExecutablePath"] or "Path unavailable"
+            exe_pid_dict[pid_int] = exe_path
+
+        return exe_pid_dict
+            
+    except subprocess.CalledProcessError as error:
+        print(f"Powershell error: {error.stderr}")
+        return None
+    except json.JSONDecodeError as error:
+        print("Failed to convert data to Json.")
+        print(f"Powershell error: {error}")
+        return None
 
 def main():
     hostname = get_hostname()
@@ -200,8 +232,11 @@ def main():
     f"{'PID':<10}"
     f"{'SERVICE':<27}"
     f"{'EXPOSURE':<20}"
-    f"{'STATUS':<12}"
+    f"{'STATUS':<25}"
+    f"{'EXE PATH':<20}"
     )
+
+    process_map = get_process_map()
 
     for port in tcp_ports:
         exposure = classify_net_address(port["LocalAddress"])
@@ -210,6 +245,7 @@ def main():
         pid_lookup = port['OwningProcess']
         service_to_pid = windows_service_names.get(pid_lookup, ["No Windows service"])
         service_string = ", ".join(service_to_pid)
+        exe_path = process_map.get(pid_lookup, "Path unavailable")
         
        
         if approval_status == "Approved":
@@ -228,7 +264,8 @@ def main():
             f"{port['OwningProcess']:<10}"
             f"{service_string[:24]:<27}"
             f"{exposure:<20}"
-            f"{approval_status:<12}"
+            f"{approval_status:<25}"
+            f"{exe_path[:50]:<20}"
         )
 
     print("-" * 105)
@@ -251,6 +288,7 @@ def main():
 
 
     print("~" * 50)
+    
    
     
     

@@ -50,7 +50,7 @@ def get_firewall_status_check(firewall_profiles):
 
 def get_tcp_ports():
     try:
-        process_name = "@{ Name = 'ProcessName'; Expression = {(Get-Process -Id $_.OwningProcess).ProcessName }}"
+        process_name = "@{ Name = 'ProcessName'; Expression = {( Get-Process -Id $_.OwningProcess).ProcessName }}"
         command = ("Get-NetTCPConnection -State Listen | "
                     f"Select-Object LocalAddress, LocalPort, OwningProcess, {process_name} | "
                     "Sort-Object LocalPort | "
@@ -104,6 +104,46 @@ def completeness_check(approved_count, review_count, local_only_count, high_prio
     else:
         return "FAIL. Verify listener count."
 
+def get_service_name():
+    try:
+        
+        service_map = ("Get-CimInstance -ClassName Win32_Service | "
+                      f"Select-Object ProcessId, Name | "
+                      "Where-Object { $_.ProcessID -gt 0} | "
+                      "Group-Object ProcessId | "
+                      "ConvertTo-Json -Depth 4")
+
+        services = subprocess.run(["powershell.exe", "-NoProfile", "-Command", service_map], capture_output=True, text=True, check=True)
+        services_result = json.loads(services.stdout)
+
+        json_is_dict = isinstance(services_result, dict)
+        if json_is_dict:
+            json_list = []
+            json_list.append(services_result)
+            services_result = json_list      
+
+        service_map_dict = {}
+
+        for outer_pid in services_result:
+            pid = outer_pid["Name"]
+            pid_integer = int(pid)
+            group = outer_pid["Group"]
+            service_list = []
+            for service in group:
+                service_name = service["Name"]
+                service_list.append(service_name)
+            service_map_dict[pid_integer] = service_list
+        return service_map_dict
+    
+    except subprocess.CalledProcessError as error:
+        print(f"Powershell error: {error.stderr}")
+        return None
+    except json.JSONDecodeError as error:
+        print("Failed to convert data to Json.")
+        print(f"Powershell error: {error}")
+        return None
+
+
 def main():
     hostname = get_hostname()
     audit_time = get_audit_time()
@@ -121,6 +161,7 @@ def main():
     local_only_count = 0
     high_priority_count = 0
     total_listeners = len(tcp_ports)
+    windows_service_names = get_service_name()
 
     print("~" * 28)
     print("SECURITY CONFIGURATION AUDIT")
@@ -157,6 +198,7 @@ def main():
     f"{'PORT':<8}"
     f"{'PROCESS':<26}"
     f"{'PID':<10}"
+    f"{'SERVICE':<27}"
     f"{'EXPOSURE':<20}"
     f"{'STATUS':<12}"
     )
@@ -165,6 +207,10 @@ def main():
         exposure = classify_net_address(port["LocalAddress"])
         approval_status = classify_listener(port['LocalPort'], exposure)
         process_name = port['ProcessName'] or "Unknown"
+        pid_lookup = port['OwningProcess']
+        service_to_pid = windows_service_names.get(pid_lookup, ["No Windows service"])
+        service_string = ", ".join(service_to_pid)
+        
        
         if approval_status == "Approved":
             approved_count += 1
@@ -180,6 +226,7 @@ def main():
             f"{port['LocalPort']:<8}"
             f"{process_name[:24]:<26}"
             f"{port['OwningProcess']:<10}"
+            f"{service_string[:24]:<27}"
             f"{exposure:<20}"
             f"{approval_status:<12}"
         )
@@ -201,6 +248,10 @@ def main():
     )
 
     print("Completeness verification:", result)
+
+
+    print("~" * 50)
+   
     
     
 

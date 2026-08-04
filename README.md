@@ -5,12 +5,20 @@ This repository contains beginner-friendly Python projects I am building while l
 ## Project Structure
 
 ```text
-python-files/
+src/
 ├── cybersec-scripts/
-│   └── PortScanner.py
+│   └── port_scanner.py
 ├── misc-scripts/
-│   ├── LiveWeatherDataWidget.py
-│   └── RockPaperScissors.py
+│   ├── live_weather_data_widget.py
+│   └── rock_paper_scissors.py
 └── security-configuration-auditor/
-	└── auditor.py
+    └── auditor.py
+
+tests/
+artifacts/
 ```
+
+## Conventions
+
+- Folders use kebab-case.
+- Python script files use snake_case.

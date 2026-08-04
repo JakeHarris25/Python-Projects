@@ -1,6 +1,10 @@
 # Python Projects
 
-This repository contains beginner-friendly Python projects I am building while learning Python for a cybersecurity career.
+This repository contains Python projects focused on security workflows, automation, and core programming practice for cybersecurity use cases.
+
+## Project Status
+
+This codebase is an active work in progress. It is used to sharpen Python development skills while applying professional engineering habits such as consistent structure, clear naming, and iterative improvement.
 
 ## Project Structure
 

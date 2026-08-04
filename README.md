@@ -1,1 +1,16 @@
-This is a Git repository for me to save my beginner-level programs as I try to learn Python for my cybersecurity career!
+# Python Projects
+
+This repository contains beginner-friendly Python projects I am building while learning Python for a cybersecurity career.
+
+## Project Structure
+
+```text
+python-files/
+├── cybersec-scripts/
+│   └── PortScanner.py
+├── misc-scripts/
+│   ├── LiveWeatherDataWidget.py
+│   └── RockPaperScissors.py
+└── security-configuration-auditor/
+	└── auditor.py
+```
